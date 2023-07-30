@@ -145,8 +145,8 @@ def create_bar_race(
     data = data_.copy(deep=True)
     data_cum = data_.copy(deep=True)
 
-    colors = colors
     data_cummulative = preprocess(data_cum, interpolate_num, show_data_frame)
+
     build_color_map(list(data_cummulative.columns), colors)
 
     animator = animation.FuncAnimation(
