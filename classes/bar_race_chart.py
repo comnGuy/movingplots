@@ -7,8 +7,17 @@ import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 180
 
 
+fig, ax = plt.subplots(2, figsize=(26, 15), gridspec_kw={
+                       'height_ratios': [10, 1]}, dpi=180)
+plt.box(False)
+plt.subplots_adjust(bottom=0.05, right=0.95, left=0.05, hspace=0, wspace=0)
+plt.margins(0, 0)
+dates = set()
+
+
 def preprocess(data_cum: pd.DataFrame, interpolate_num: int = 30, show_data_frame: int = 30) -> pd.DataFrame:
-    data_cum = data_cum.reset_index()
+    # print(data_cum)
+    # data_cum = data_cum.reset_index()
     # Interpolate
     data_cum.index = range(0, interpolate_num * len(data_cum), interpolate_num)
     data_cum = data_cum.reindex(index=range(interpolate_num * len(data_cum)))
@@ -28,20 +37,20 @@ def preprocess(data_cum: pd.DataFrame, interpolate_num: int = 30, show_data_fram
     return data_cum
 
 
-fig, ax = plt.subplots(2, figsize=(26, 15), gridspec_kw={
-                       'height_ratios': [10, 1]}, dpi=180)
-# fig, ax = plt.subplots(2, figsize=(26/2, 15/2), gridspec_kw={
-#                        'height_ratios': [10, 1]}, dpi=80)
-
-plt.box(False)
-plt.subplots_adjust(bottom=0.05, right=0.95, left=0.05, hspace=0, wspace=0)
-# plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
-#         hspace = 0, wspace = 0)
-plt.margins(0, 0)
-dates = set()
-
-
 def convert_type(value, target_type):
+    """
+    Attempts to convert a given value to a desired target type.
+
+    Args:
+        value (Any): The value to be converted into the target type.
+        target_type (type): The type into which the value should be converted.
+
+    Returns:
+        The converted value if conversion is successful, otherwise None.
+
+    Raises:
+        Prints an error and returns None if conversion is not possible.
+    """
     try:
         return target_type(value)
     except Exception as e:
@@ -50,16 +59,14 @@ def convert_type(value, target_type):
         return None
 
 
-def draw(index, title, date_format, bar_chart_text, bar_text, title_font_size=40, summary_type=int):
-    date_ = data_cummulative.iloc[index][1]
-    # print(data_cummulative.iloc[index])
-    # print(data_cummulative.iloc[index][2:])
-    pds = data_cummulative.iloc[index][2:].sort_values().tail(10)
+def generate_images(index, title, date_format, bar_chart_text, bar_text, title_font_size=40, summary_type=int, bar_chart_amount=10):
+    date_ = data_cummulative.iloc[index][0]
+    pds = data_cummulative.iloc[index][1:].sort_values().tail(bar_chart_amount)
     values = pds.values
     indexs = pds.index
     colors = get_colors(indexs)
     sum_text = str(convert_type(
-        data_cummulative.iloc[index][2:].sum(), summary_type)) + ' days'
+        data_cummulative.iloc[index][1:].sum(), summary_type)) + ' days'
 
     ax[0].clear()
     ax[1].clear()
@@ -67,16 +74,10 @@ def draw(index, title, date_format, bar_chart_text, bar_text, title_font_size=40
     ax[0].barh(indexs, values, color=colors)
     dx = values.max() / 200
     for i, (value, name) in enumerate(zip(values, indexs)):
-        # ax[0].text(value-dx, i,     name,           size=26, weight=600, ha='right', va='bottom')
         ax[0].text(value-dx, i,     name,           size=26,
                    weight=200, ha='right', va='center')
-        # ax[0].text(value-dx, i-.25, group_lk[name], size=10, color='#444444', ha='right', va='baseline')
         ax[0].text(value+dx, i,     f'{value:,.0f}',
                    size=24, ha='left',  va='center')
-    # ax[0].text(1, 0.2, date_, transform=ax[0].transAxes, color='#777777', size=62, ha='right', weight=800)
-    date_ = datetime.strptime(date_, "%Y-%m-%d")
-    # ax[0].text(1, 0.3, datetime.date.strftime(date_, date_format),
-    #            transform=ax[0].transAxes, color='#777777', size=62, ha='right', weight=800)
     ax[0].text(1, 0.3, date_.strftime(date_format),
                transform=ax[0].transAxes, color='#777777', size=62, ha='right', weight=800)
     ax[0].text(1, 0.2, sum_text, transform=ax[0].transAxes,
@@ -92,12 +93,11 @@ def draw(index, title, date_format, bar_chart_text, bar_text, title_font_size=40
     ax[0].set_axisbelow(True)
     ax[0].text(0, 1.15, title,
                transform=ax[0].transAxes, size=title_font_size, weight=600, ha='left', va='top')
-    # ax[0].text(1, 0, 'Twitch Viz', transform=ax[0].transAxes, color='#777777', ha='right',
-    #         bbox=dict(facecolor='white', alpha=0.8, edgecolor='white'))
     ax[0].spines["top"].set_visible(False)
     ax[0].spines["right"].set_visible(False)
     ax[0].spines["bottom"].set_visible(False)
 
+    # Lower bar chart
     dates.add(date_)
     first_part = list(data[data['date'].isin(
         dates)].sum(axis=1, numeric_only=True))
@@ -106,9 +106,7 @@ def draw(index, title, date_format, bar_chart_text, bar_text, title_font_size=40
     ax[1].text(0, -0.0, bar_text,
                transform=ax[0].transAxes, size=24, weight=100, ha='left', va='top', color='#777777')
     ax[1].bar(list(range(len(data))), cmplet, color='#777777', alpha=0.8)
-    # ax[1].plot(list(range(len(data_bar))), data_bar, color='#777777', alpha=0.8)
     ax[1].axis('off')
-    # plt.savefig('foo.png')
 
 
 color_map = {}
@@ -125,7 +123,6 @@ def get_colors(columns):
 
 def create_bar_race(
     data_,
-    # data_cum,
     colors,
     fps=60,
     save_path='animation.mp4',
@@ -136,35 +133,28 @@ def create_bar_race(
     bar_chart_text='TO-BE-FILLED',
     bar_text='TO-BE-FILLED',
     title_font_size=40,
-    summary_type=int
+    summary_type=int,
+    bar_chart_amount=10
 ):
+    # Use this data for the second (lower bar chart) bar chart
     global data
+
+    # Use this bar chart for the main moving bars
     global data_cummulative
 
     data = data_.copy(deep=True)
     data_cum = data_.copy(deep=True)
 
-    # data = data_
-    # TODO, muss vorher gemacht werden
-    data = data.reset_index()
-    data['date'] = pd.to_datetime(data.date, format='%Y-%m-%d')
-
-    colors = colors
     data_cummulative = preprocess(data_cum, interpolate_num, show_data_frame)
+
     build_color_map(list(data_cummulative.columns), colors)
-    # draw(50)
 
     animator = animation.FuncAnimation(
         fig,
-        draw,
+        generate_images,
         frames=range(0, len(data_cummulative)),
         interval=200,
-        fargs=(title, date_format, bar_chart_text, bar_text, title_font_size, summary_type))
-    # # HTML(animator.to_jshtml())
-    # animator.save('animation.gif', writer='imagemagick', fps=fps)
-    # MP4
-    # FFwriter = animation.FFMpegWriter(fps=fps)
-    # animator.save(save_path, writer=FFwriter)
+        fargs=(title, date_format, bar_chart_text, bar_text, title_font_size, summary_type, bar_chart_amount))
 
     # Determine the writer based on file extension
     if save_path.lower().endswith('.gif'):
@@ -174,13 +164,3 @@ def create_bar_race(
     else:
         raise ValueError('Unsupported file extension. Please use .gif or .mp4')
     animator.save(save_path, writer=writer)
-
-
-# load data
-# data_c = pd.read_csv('edo_cum.csv')
-# data = pd.read_csv('edo.csv')
-
-# # Colors
-# colors = ["#adb0ff", "#ffb3ff", "#90d595", "#e48381", "#aafbff", "#f7bb5f", "#eafb50"]
-
-# create_bar_race(data, data_c, colors)

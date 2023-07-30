@@ -3,7 +3,10 @@ from classes.bar_race_chart import create_bar_race
 
 # load data
 data = pd.read_csv('datasets/edo_cum.csv')
-data = data[:30]
+
+# Preprocess
+data['date'] = pd.to_datetime(data.date, format='%Y-%m-%d')
+data = data[:15]
 
 # Colors
 colors = ["#adb0ff", "#ffb3ff", "#90d595",
