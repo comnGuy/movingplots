@@ -7,7 +7,7 @@ import matplotlib as mpl
 from tqdm import tqdm
 
 
-from classes.models import SettingsPreprocessModel, SettingsDesignModel
+from classes.models import SettingsPreprocessModel, SettingsDesignModel, SettingsVideoModel
 mpl.rcParams['figure.dpi'] = 180
 
 
@@ -127,8 +127,7 @@ def create_bar_race(
     data_,
     settings_preprocess: SettingsPreprocessModel,
     settings_design: SettingsDesignModel,
-    fps=60,
-    save_path='animation.mp4',
+    settings_video: SettingsVideoModel,
     title='TO-BE-FILLED',
     date_format='%Y-%m',
     bar_chart_text='TO-BE-FILLED',
@@ -160,10 +159,10 @@ def create_bar_race(
         fargs=(title, date_format, bar_chart_text, bar_text, settings_design, title_font_size, summary_type, bar_chart_amount))
 
     # Determine the writer based on file extension
-    if save_path.lower().endswith('.gif'):
-        writer = animation.PillowWriter(fps=fps)
-    elif save_path.lower().endswith('.mp4'):
-        writer = animation.FFMpegWriter(fps=fps)
+    if settings_video.save_path.lower().endswith('.gif'):
+        writer = animation.PillowWriter(fps=settings_video.fps)
+    elif settings_video.save_path.lower().endswith('.mp4'):
+        writer = animation.FFMpegWriter(fps=settings_video.fps)
     else:
         raise ValueError('Unsupported file extension. Please use .gif or .mp4')
     
@@ -172,7 +171,7 @@ def create_bar_race(
         pbar = tqdm(total=len(data_cummulative))
         def update(*args):
             pbar.update()
-        animator.save(save_path, writer=writer, progress_callback=update)
+        animator.save(settings_video.save_path, writer=writer, progress_callback=update)
         pbar.close()
     else:
-        animator.save(save_path, writer=writer)
+        animator.save(settings_video.save_path, writer=writer)

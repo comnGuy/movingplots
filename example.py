@@ -1,6 +1,6 @@
 import pandas as pd
 from classes.bar_race_chart import create_bar_race
-from classes.models import SettingsPreprocessModel, SettingsDesignModel
+from classes.models import SettingsPreprocessModel, SettingsDesignModel, SettingsVideoModel
 
 
 # Settings
@@ -15,6 +15,11 @@ settings_design = SettingsDesignModel(
                 "#e48381", "#aafbff", "#f7bb5f", "#eafb50"]
 )
 
+settings_video = SettingsVideoModel(
+    fps=2,
+    save_path='anim.gif'
+)
+
 # load data
 data = pd.read_csv('datasets/edo_cum.csv')
 
@@ -26,8 +31,7 @@ create_bar_race(
     data,
     settings_preprocess,
     settings_design,
-    fps=5,
-    save_path='anim.gif',
+    settings_video,
     title='Most played games by Edopeh',
     bar_chart_text='Accumulated average monthly views',
     bar_text='Average monthly views',
