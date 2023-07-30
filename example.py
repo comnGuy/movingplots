@@ -1,5 +1,19 @@
 import pandas as pd
 from classes.bar_race_chart import create_bar_race
+from classes.models import SettingsPreprocessModel, SettingsDesignModel
+
+
+# Settings
+# Process Settings
+settings_preprocess = SettingsPreprocessModel(
+    interpolate_num=5, 
+    show_data_frame=5
+)
+# Design
+settings_design = SettingsDesignModel(
+    bar_colors=["#adb0ff", "#ffb3ff", "#90d595",
+                "#e48381", "#aafbff", "#f7bb5f", "#eafb50"]
+)
 
 # load data
 data = pd.read_csv('datasets/edo_cum.csv')
@@ -8,15 +22,13 @@ data = pd.read_csv('datasets/edo_cum.csv')
 data['date'] = pd.to_datetime(data.date, format='%Y-%m-%d')
 data = data[:15]
 
-# Colors
-colors = ["#adb0ff", "#ffb3ff", "#90d595",
-          "#e48381", "#aafbff", "#f7bb5f", "#eafb50"]
-
 create_bar_race(
     data,
-    colors,
-    fps=15,
+    settings_preprocess,
+    settings_design,
+    fps=5,
     save_path='anim.gif',
-    title='Most played gamed by Edopeh',
+    title='Most played games by Edopeh',
     bar_chart_text='Accumulated average monthly views',
-    bar_text='Average monthly views')
+    bar_text='Average monthly views',
+    progress_bar=True)

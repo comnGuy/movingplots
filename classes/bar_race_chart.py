@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.animation as animation
 import matplotlib as mpl
+from tqdm import tqdm
+
+
+from classes.models import SettingsPreprocessModel, SettingsDesignModel
 mpl.rcParams['figure.dpi'] = 180
 
 
@@ -15,16 +19,14 @@ plt.margins(0, 0)
 dates = set()
 
 
-def preprocess(data_cum: pd.DataFrame, interpolate_num: int = 30, show_data_frame: int = 30) -> pd.DataFrame:
-    # print(data_cum)
-    # data_cum = data_cum.reset_index()
+def preprocess(data_cum: pd.DataFrame, settings_preprocess: SettingsPreprocessModel) -> pd.DataFrame:
     # Interpolate
-    data_cum.index = range(0, interpolate_num * len(data_cum), interpolate_num)
-    data_cum = data_cum.reindex(index=range(interpolate_num * len(data_cum)))
+    data_cum.index = range(0, settings_preprocess.interpolate_num * len(data_cum), settings_preprocess.interpolate_num)
+    data_cum = data_cum.reindex(index=range(settings_preprocess.interpolate_num * len(data_cum)))
 
     # Added time for stopping at the data point
     data_cum = pd.concat([data_cum[data_cum['date'].notnull()]]
-                         * (show_data_frame-1) + [data_cum]).sort_index().reset_index()
+                         * (settings_preprocess.show_data_frame-1) + [data_cum]).sort_index().reset_index()
 
     # Full everything
     data_cum.loc[:, data_cum.columns != 'date'] = data_cum.loc[:, data_cum.columns !=
@@ -59,7 +61,7 @@ def convert_type(value, target_type):
         return None
 
 
-def generate_images(index, title, date_format, bar_chart_text, bar_text, title_font_size=40, summary_type=int, bar_chart_amount=10):
+def generate_images(index, title, date_format, bar_chart_text, bar_text, settings_design: SettingsDesignModel, title_font_size=40, summary_type=int, bar_chart_amount=10):
     date_ = data_cummulative.iloc[index][0]
     pds = data_cummulative.iloc[index][1:].sort_values().tail(bar_chart_amount)
     values = pds.values
@@ -123,18 +125,18 @@ def get_colors(columns):
 
 def create_bar_race(
     data_,
-    colors,
+    settings_preprocess: SettingsPreprocessModel,
+    settings_design: SettingsDesignModel,
     fps=60,
     save_path='animation.mp4',
-    interpolate_num=5,
-    show_data_frame=5,
     title='TO-BE-FILLED',
     date_format='%Y-%m',
     bar_chart_text='TO-BE-FILLED',
     bar_text='TO-BE-FILLED',
     title_font_size=40,
     summary_type=int,
-    bar_chart_amount=10
+    bar_chart_amount=10,
+    progress_bar=False
 ):
     # Use this data for the second (lower bar chart) bar chart
     global data
@@ -142,19 +144,20 @@ def create_bar_race(
     # Use this bar chart for the main moving bars
     global data_cummulative
 
+    # Copy data
     data = data_.copy(deep=True)
     data_cum = data_.copy(deep=True)
 
-    data_cummulative = preprocess(data_cum, interpolate_num, show_data_frame)
+    data_cummulative = preprocess(data_cum, settings_preprocess)
 
-    build_color_map(list(data_cummulative.columns), colors)
+    build_color_map(list(data_cummulative.columns), settings_design.bar_colors)
 
     animator = animation.FuncAnimation(
         fig,
         generate_images,
         frames=range(0, len(data_cummulative)),
         interval=200,
-        fargs=(title, date_format, bar_chart_text, bar_text, title_font_size, summary_type, bar_chart_amount))
+        fargs=(title, date_format, bar_chart_text, bar_text, settings_design, title_font_size, summary_type, bar_chart_amount))
 
     # Determine the writer based on file extension
     if save_path.lower().endswith('.gif'):
@@ -163,4 +166,13 @@ def create_bar_race(
         writer = animation.FFMpegWriter(fps=fps)
     else:
         raise ValueError('Unsupported file extension. Please use .gif or .mp4')
-    animator.save(save_path, writer=writer)
+    
+    if progress_bar:
+        # Create a progress bar
+        pbar = tqdm(total=len(data_cummulative))
+        def update(*args):
+            pbar.update()
+        animator.save(save_path, writer=writer, progress_callback=update)
+        pbar.close()
+    else:
+        animator.save(save_path, writer=writer)
